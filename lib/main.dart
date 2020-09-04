@@ -14,6 +14,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Startup Name Generator',
+      theme: ThemeData(
+        primaryColor: Colors.amber,
+      ),
       home: RandomWords(),
     );
   }
@@ -28,18 +31,60 @@ class RandomWords extends StatefulWidget {
 // dart grammar: leading underscore enforce privacy
 class _RandomWordsState extends State<RandomWords> {
   final _suggestions = <WordPair>[]; // a list of suggestions
+  final _saved = Set<WordPair>();
   final _biggerFont = TextStyle(fontSize: 18.0); // a constant TextStyle
 
+  // The main window
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Startup Name Generator'),
+        actions: [
+          IconButton(icon: Icon(Icons.list), onPressed: _pushSaved),
+        ],
       ),
       body: _buildSuggestions(),
     );
   }
 
+  void _pushSaved() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+          builder: (BuildContext context) {
+
+            // tiles
+            final tiles = _saved.map(
+                  (WordPair pair) {
+                return ListTile(
+                  title: Text(
+                    pair.asPascalCase,
+                    style: _biggerFont,
+                  ),
+                );
+              },
+            );
+
+            // tiles -> divided tiles
+            final divided = ListTile.divideTiles(
+              context: context,
+              tiles: tiles,
+            ).toList();
+
+            // return a new screen: saved suggestions
+            return Scaffold(
+              appBar: AppBar(
+                title: Text('Saved Suggestions'),
+              ),
+              // the body consists of a listview containing the ListTiles rows
+              body: ListView(children: divided),
+            );
+          }
+      )
+    );
+  }
+
+  // build list view of word pairs
   Widget _buildSuggestions() {
     return ListView.builder(
         padding: EdgeInsets.all(16.0),
@@ -61,12 +106,27 @@ class _RandomWordsState extends State<RandomWords> {
         });
   }
 
+  // build a single row
   Widget _buildRow(WordPair pair) {
+    final alreadySaved = _saved.contains(pair);
     return ListTile(
-      title: Text(
+      title: Text( // Component 1: title
         pair.asPascalCase,
         style: _biggerFont,
       ),
+      trailing: Icon( // Component 2: trailing heart
+        alreadySaved ? Icons.favorite : Icons.favorite_border,
+        color: alreadySaved ? Colors.lightBlue : null,
+      ),
+      onTap: () { // Component 3: on tap, change trailing heart color
+        setState(() {
+          if (alreadySaved) {
+            _saved.remove(pair);
+          } else {
+            _saved.add(pair);
+          }
+        });
+      },
     );
   }
 }
